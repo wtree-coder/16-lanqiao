@@ -1,0 +1,74 @@
+# ==========================================
+# STM32CubeMX + VS Code 项目 .gitignore 模板
+# ==========================================
+
+# 1. 编译输出目录及文件 (Build Outputs)
+# ------------------------------------------
+# 无论使用 Makefile 还是 CMake，生成的构建产物都不应提交
+build/
+Debug/
+Release/
+cmake-build-*/
+out/
+
+# 各类编译中间产物和二进制目标文件
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.su
+
+# 2. STM32CubeMX 备份及无关文件
+# ------------------------------------------
+*.bak
+*.tmp
+# ⚠️ 注意：绝对不要忽略 .ioc 文件，那是你的 CubeMX 工程核心配置！
+# 也不要忽略 Inc/ 和 Src/ 目录下的 .c/.h 源码文件。
+
+# 3. VS Code 编辑器配置 (VS Code settings)
+# ------------------------------------------
+.vscode/
+*.code-workspace
+
+# 如果你的团队需要共享 C/C++ 环境配置或调试任务，
+# 可以取消下面几行的注释（去掉前面的 #），让 git 追踪它们：
+!.vscode/c_cpp_properties.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# 4. 其他 IDE 遗留文件 (防止你偶尔用别的软件打开)
+# ------------------------------------------
+.idea/
+*.uvoptx
+*.uvprojx
+
+# 5. 操作系统级系统文件
+# ------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# Keil MDK 编译产物和临时文件
+# ==========================================
+*.o
+*.d
+*.crf
+*.lnp
+*.axf
+*.htm
+*.build_log.htm
+*.dep
+*.map
+*.iex
+*.sct
+*.uvguix.*
+*.JLinkScript
+
+# 忽略 MDK-ARM 下生成的编译文件夹（通常和工程同名）
+MDK-ARM/*/
+# 但必须保留 Keil 工程文件本身！
+!MDK-ARM/*.uvprojx
+!MDK-ARM/*.uvoptx
