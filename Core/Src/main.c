@@ -96,6 +96,8 @@ int main(void)
   MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+  HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
   LCD_Init();
   LCD_SetBackColor(Black);
   LCD_SetTextColor(White);
