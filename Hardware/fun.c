@@ -5,6 +5,7 @@
 #include "key.h"
 #include "led.h"
 #include "adc.h"
+#include <stdlib.h>
 
 uint8_t lcd_mode = 0;
 char buf[30];
@@ -12,10 +13,10 @@ int count_time = 0;
 uint8_t lock_flag = 0;
 float adc_R38,    //频率
 adc_R37;          //占空比
-int DS = 1,   //占空比步长参数
-DR = 80,      //频率步长参数
-FS = 100,     
-FR = 2000;    //频率参数最大值
+
+int DS = 1,DR = 80,FS = 100,FR = 2000;
+int active_DS = 1, active_DR = 80, active_FS = 100, active_FR = 2000;
+
 uint16_t free_A;
 int n_DS, n_FS;
 float end1,end2;
@@ -64,51 +65,39 @@ void fun_mode(void){
             if(key_short[0]){
                 key_short[0] = 0;
                 lcd_mode = 0;
+
+            if((DR >= DS + 10) && (FR >= FS + 1000)){
+                active_DS = DS;
+                active_DR = DR;
+                active_FS = FS;
+                active_FR = FR;
+            }else{
+                DS = active_DS;
+                DR = active_DR;
+                FS = active_FS;
+                FR = active_FR;
             }
+        }
             if(key_short[1]){
                 key_short[1] = 0;
                 index++;
                 if(index == 4) index = 0;
             }
             if(index == 0){
-                if(key_short[2]){
-                    key_short[2] = 0;
-                    DS++;
-                }
-                if(key_short[3]){
-                    key_short[3] = 0;
-                    DS--;
-                }
+                if(key_short[2]){ key_short[2]=0; DS++; if(DS>10) DS=10; }
+                if(key_short[3]){ key_short[3]=0; DS--; if(DS<1) DS=1; }
             }
             if(index == 1){
-                if(key_short[2]){
-                    key_short[2] = 0;
-                    DR+=10;
-                }
-                if(key_short[3]){
-                    key_short[3] = 0;
-                    DS-=10;
-                }
+                if(key_short[2]){ key_short[2]=0; DR+=10; if(DR>90) DR=90; }
+                if(key_short[3]){ key_short[3]=0; DR-=10; if(DR<10) DR=10; }
             }
             if(index == 2){
-                if(key_short[2]){
-                    key_short[2] = 0;
-                    FS+=100;
-                }
-                if(key_short[3]){
-                    key_short[3] = 0;
-                    FS-=100;
-                }
+                if(key_short[2]){ key_short[2]=0; FS+=100; if(FS>10000) FS=10000; }
+                if(key_short[3]){ key_short[3]=0; FS-=100; if(FS<100) FS=100; }
             }
             if(index == 3){
-                if(key_short[2]){
-                    key_short[2] = 0;
-                    FR+=1000;
-                }
-                if(key_short[3]){
-                    key_short[3] = 0;
-                    FR-=1000;
-                }
+                if(key_short[2]){ key_short[2]=0; FR+=1000; if(FR>10000) FR=10000; }
+                if(key_short[3]){ key_short[3]=0; FR-=1000; if(FR<1000) FR=1000; }
             }
             break;
         case 3:
@@ -125,7 +114,7 @@ void fun_mode(void){
                 count_time = 0;
             }
             break;
-    }
+        }
 }
 
 float adc_read(ADC_HandleTypeDef *hadc){
@@ -140,20 +129,20 @@ void adc_proc(void){
 }
 
 void fun_data(void){
-    n_DS = (DR - 10)/DS;
-    n_FS = (FR - 1000)/FS;
+    n_DS = (active_DR - 10) / active_DS;
+    n_FS = (active_FR - 1000) / active_FS;
     
     if(lock_flag == 0){
-    end1 = 10 + (int)((float)adc_R37/3.3f*(n_DS+1))*DS;
-    if(end1 > DR) end1 = DR;
-    TIM3->CCR2 = (int)end1;
+        end1 = 10 + (int)((float)adc_R37 / 3.3f * n_DS) * active_DS;
+        if(end1 > active_DR) end1 = active_DR;
+        TIM3->CCR2 = (int)end1;
 
-    end2 = 1000 + (int)((float)adc_R38/3.3f*(n_FS+1))*FS;
-    if(end2 > FR) end2 = FR;
-    TIM3->PSC = 1000000/(int)end2-1;
+        end2 = 1000 + (int)((float)adc_R38 / 3.3f * n_FS) * active_FS;
+        if(end2 > active_FR) end2 = active_FR;
+        TIM3->PSC = 1000000/(int)end2-1;
     }
 
-    if(free_A - end2 > 1000){
+    if(abs((int)free_A - (int)end2) >= 1000){
         work_flag = 0;
         if(update_flag){
             CF_c = (int)end2;
@@ -200,13 +189,13 @@ void fun_lcd(void){
         case 1://统计
             sprintf(buf, "       RECD          ");
             LCD_DisplayStringLine(Line1, (uint8_t *)buf);
-            sprintf(buf, "   CF=%d          ",CF_c);
+            sprintf(buf, "   CF=%dHz          ",CF_c);
             LCD_DisplayStringLine(Line3, (uint8_t *)buf);
-            sprintf(buf, "   CD=%d          ",CD_t);
+            sprintf(buf, "   CD=%d%%          ",CD_t);
             LCD_DisplayStringLine(Line4, (uint8_t *)buf);
-            sprintf(buf, "   DF=%d          ",DF_c);
+            sprintf(buf, "   DF=%dHz          ",DF_c);
             LCD_DisplayStringLine(Line5, (uint8_t *)buf);
-            sprintf(buf, "   XF=%d          ",CF_c - DF_c);
+            sprintf(buf, "   XF=%dHz          ",abs(CF_c - DF_c));
             LCD_DisplayStringLine(Line6, (uint8_t *)buf);
             sprintf(buf, "   %02dH%02dM%02dS          ",
                 count_time/3600, count_time%3600/60, count_time%60);
@@ -250,7 +239,9 @@ void fun_lcd(void){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
     if(htim->Instance == TIM17){
-        count_time++;
+        if(lock_flag == 0){
+            count_time++;
+        }
     }
     if(htim->Instance == TIM16){
         fun_mode();
